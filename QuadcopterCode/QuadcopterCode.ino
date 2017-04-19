@@ -1,6 +1,7 @@
 #include <Servo.h>
+#include "Ultrasonic.h"
 #define sensor(A0)
-
+Ultrasonic ultrasonic(A1,A2); //Can change pins later if need be
 Servo esc1; //ESC Stuff
 Servo esc2;
 Servo esc3;
@@ -11,7 +12,7 @@ long throtle; // Reciever Stuff
 long pitch;
 long roll;
 long yaw;
-
+int distance;
 // Movement Stuff
 int moveNumber; //Determines how severly pitching, yawing, or rolling effects quadcopter.
 /*
@@ -95,6 +96,7 @@ void loop() {
   pitch = pitching(recevierReadingChecker(pulseIn(7,HIGH,25000)),throtle);
   yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)),throtle);
   roll = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
+  distance = ultrasonic.Ranging(1);//Reads distance in CM
 
   esc1.write(90+throtle); //Write Throtle to ESCS.
   esc2.write(90-throtle);
