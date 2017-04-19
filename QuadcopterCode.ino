@@ -54,9 +54,9 @@ void setup() {
 
 void loop() {
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
-  pitch = recevierReadingChecker(pulseIn(7,HIGH,25000));
-  yaw = recevierReadingChecker(pulseIn(8,HIGH, 25000));
-  roll = recevierReadingChecker(pulseIn(12,HIGH, 25000));
+  pitch = pitching(recevierReadingChecker(pulseIn(7,HIGH,25000)),throtle);
+  yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)),throtle);
+  roll = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
 
   esc1.write(90+throtle);
   delay(1000);
@@ -80,7 +80,7 @@ void loop() {
 
 }
 
-int recevierReadingChecker(int x){ // Clips Reviecer input to a certain range.
+long recevierReadingChecker(long x){ // Clips Reviecer input to a certain range.
   if(x < 1070){
     return 1070;
   }
@@ -92,21 +92,45 @@ int recevierReadingChecker(int x){ // Clips Reviecer input to a certain range.
   }
 }
 
-int escData(int x){ // Get throtle data converted.
-  double data = (double)(((x-1070)/830)*90);//Multiply first then divide
-  return (int) data;
+long escData(long x){ // Get throtle data converted.
+  return ((x-1070)*90/830);
 }
 
-int pitching(int x, int th){
-  
+long pitching(long x, long th){ // Get Pitching Data
+  if (th > 1485){
+    if(x > 1485){
+      return ((x-1070)*10/830);
+    }
+    else{
+      return -((x-1070)*10/830);
+    }
+  }
+  else {
+    if(x > 1485){
+      return -((x-1070)*10/830);
+    }
+    else{
+      return ((x-1070)*10/830);
+    }
+  }
 }
 
-int rolling(int x, int th){
-  
+long rolling(long x, long th){
+    if (th > 1485){
+    return ((x-1070)*10/830);
+  }
+  else {
+     return -((x-1070)*10/830);
+  }
 }
 
-int yawing(int x, int th){
-  
+long yawing(long x, long th){
+    if (th > 1485){
+    return ((x-1070)*10/830);
+  }
+  else {
+     return -((x-1070)*10/830);
+  }
 }
 
 
