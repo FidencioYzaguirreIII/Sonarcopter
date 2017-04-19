@@ -7,10 +7,13 @@ Servo esc3;
 Servo esc4;
 int val;
 
-int throtle; // Reciever Stuff
-int pitch;
-int roll;
-int yaw;
+long throtle; // Reciever Stuff
+long pitch;
+long roll;
+long yaw;
+
+// Movement Stuff
+int moveNumber; //Determines how severly pitching, yawing, or rolling effects quadcopter.
 
 void setup() {
   esc1.attach(5); // Callibrate first ESC
@@ -58,14 +61,11 @@ void loop() {
   yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)),throtle);
   roll = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
 
-  esc1.write(90+throtle);
-  delay(1000);
+  esc1.write(90+throtle); //Write Throtle to ESCS.
   esc2.write(90-throtle);
-  delay(1000);
   esc3.write(90+throtle);
-  delay(1000);
   esc4.write(90-throtle);
-  delay(1000);
+  delay(5);
 
   Serial.print("ESC1: ");
   Serial.println(90+throtle);
@@ -96,9 +96,11 @@ long escData(long x){ // Get throtle data converted.
   return ((x-1070)*90/830);
 }
 
-long pitching(long x, long th){ // Get Pitching Data
-  if (th > 1485){
-    if(x > 1485){
+// The pitching, yawing, and rolling functions still need work.
+
+long pitching(long x, long th){ // Get Pitching Data conveted
+  if (th > 45){
+    if(x > 1485){               // Determine ratio based on throtle.
       return ((x-1070)*10/830);
     }
     else{
@@ -106,7 +108,7 @@ long pitching(long x, long th){ // Get Pitching Data
     }
   }
   else {
-    if(x > 1485){
+    if(x > 45){
       return -((x-1070)*10/830);
     }
     else{
@@ -115,8 +117,8 @@ long pitching(long x, long th){ // Get Pitching Data
   }
 }
 
-long rolling(long x, long th){
-    if (th > 1485){
+long rolling(long x, long th){ // Get rolling data converted
+    if (th > 45){
     return ((x-1070)*10/830);
   }
   else {
@@ -124,8 +126,8 @@ long rolling(long x, long th){
   }
 }
 
-long yawing(long x, long th){
-    if (th > 1485){
+long yawing(long x, long th){  // Get yawing data converted
+    if (th > 45){
     return ((x-1070)*10/830);
   }
   else {
