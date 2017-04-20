@@ -1,6 +1,23 @@
+/*
+ * Construction Notes
+ * 
+ *       ESC Layout
+ *      (1)     (2)
+ *         \   /
+ *          ( )
+ *         /   \
+ *      (4)     (3)
+ * 
+ * Pins in use:
+ * ESC Pins: 5, 6, 9, 10
+ * RC Pins: 4, 7, 8, 12
+ * Sonar Pins: A1, A2
+ */
+
 #include <Servo.h>
 #include "Ultrasonic.h"
 #define sensor(A0)
+
 Ultrasonic ultrasonic(A1,A2); //Can change pins later if need be
 Servo esc1; //ESC Stuff
 Servo esc2;
