@@ -36,7 +36,7 @@ int moveNumber; //Determines how severly pitching, yawing, or rolling effects qu
  * General Structure for PID controller 
  * coefficient terms need to manually tuned to our drone
  * This structure is designed to work with the calculatePID method to get our adjustment factor for pitch and roll calculations
- * Since ptich and roll are determined by difference between front and back; left and right respectively, PID is used to calculate
+ * Since pitch and roll are determined by difference between front and back; left and right respectively, PID is used to calculate
  * adjustment to these values
  */
 
@@ -99,10 +99,10 @@ void setup() {
   rollPID.derivativeCoefficient = 0;
   rollPID.proportionalCoefficient = 0;
   //Initialize PID other values:
-  pitchPID.target = pitching(recevierReadingChecker(pulseIn(7,HIGH,25000)),throtle);  //Need to decide if this value should be transformed into an angle
+  pitchPID.target = 0; //Need to decide if this value should be transformed into an angle
   pitchPID.timeNow = millis();
   pitchPID.integralAccumulator = 0;
-  rollPID.target = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
+  rollPID.target = 0;
   rollPID.timeNow = millis();
   rollPID.integralAccumulator = 0;
   
