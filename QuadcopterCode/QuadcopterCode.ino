@@ -152,22 +152,30 @@ void loop() {
   mpu6050();
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
   pitch = angle(recevierReadingChecker(pulseIn(7,HIGH,25000)));
-  yaw = angle(recevierReadingChecker(pulseIn(8,HIGH, 25000)));
-  roll = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
+  yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)));
+  roll = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)));
 
   //Get data from sonar and accellerometer
   distance = ultrasonic.Ranging(1);//Reads distance in CM
   
   mpu6050(); //updates accellerometer values
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch);
-  rollAdjustment = calculatePID(rollPID, angle_roll, roll);
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)*5/45;
+  rollAdjustment = calculatePID(rollPID, angle_roll, roll)*5/45;
   
   //Write throttle values
-  escFrontLeft.write(90 + throtle + pitchAdjustment + rollAdjustment); //+PIDPitch +PIDRoll
-  escFrontRight.write(90 - throtle + pitchAdjustment - rollAdjustment);
-  escBackLeft.write(90 + throtle - pitchAdjustment + rollAdjustment);
-  escBackRight.write(90 - throtle - pitchAdjustment - rollAdjustment);
-  delay(5);
+  if (throtle > 30){
+    escFrontLeft.write((int)(90 + throtle + pitchAdjustment + rollAdjustment + yawing)); //+PIDPitch +PIDRoll
+    escFrontRight.write((int) (90 - throtle - pitchAdjustment + rollAdjustment + yawing));
+    escBackLeft.write((int) (90 - throtle + pitchAdjustment - rollAdjustment + yawing));
+    escBackRight.write((int) (90 + throtle - pitchAdjustment - rollAdjustment + yawing));
+    delay(5);
+  }
+  else{
+    escFrontLeft.write((int) (90 + throtle)); //+PIDPitch +PIDRoll
+    escFrontRight.write((int) (90 - throtle));
+    escBackLeft.write((int) (90 - throtle));
+    escBackRight.write((int) (90 + throtle));
+  }
 
   Serial.print("escFrontLeft: ");
   Serial.println(90+throtle); 
@@ -195,17 +203,12 @@ long recevierReadingChecker(long x){ // Clips Reviecer input to a certain range.
 }
 
 long escData(long x){ // Get throtle data converted.
-  return ((x-1070)*80/830);
+  return ((x-1070)*60/830);
 }
 
 // The pitching, yawing, and rolling functions still need work.
-long yawing(long x, long th){  // Get yawing data converted
-    if (th > 45){
-    return ((x-1070)*10/830);
-  }
-  else {
-     return -((x-1070)*10/830);
-  }
+long yawing(long x){  // Get yawing data converted
+    return ((x-1070) * 5 / 830);
 }
 
 // Return values are place holders
@@ -271,7 +274,7 @@ long calculatePID(struct PID data, float currentValue, long currentTarget)
   data.integralAccumulator += (long)((data.target-currentValue) * (timeUpdate - data.timeNow));
   data.value = (long)currentValue;
   data.timeNow = timeUpdate;
-  return (data.target - data.value) * data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient;
+  return (data.target - data.value) * (data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient);
 }
 
 void mpu6050(){
