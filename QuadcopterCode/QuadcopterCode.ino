@@ -19,10 +19,10 @@
 #define sensor(A0)
 
 Ultrasonic ultrasonic(A1,A2); //Can change pins later if need be
-Servo esc1; //ESC Stuff
-Servo esc2;
-Servo esc3;
-Servo esc4;
+Servo escFrontLeft; //ESC Stuff
+Servo escFrontRight;
+Servo escBackLeft;
+Servo escBackRight;
 int val;
 //These values are input target values as recieved from the remote controller
 long throtle; // Reciever Stuff
@@ -62,36 +62,44 @@ struct PID{
   long integralCoefficient;
   long derivativeCoefficient;
 };
+
+//PID variables
+  struct PID pitchPID;
+  struct PID rollPID;
+  //Initialize calculated PID's
+  long pitchAdjustment = 0;
+  long rollAdjustment = 0;
+  
 void setup() {
-  esc1.attach(5); // Callibrate first ESC
-  esc1.write(180);
+  escFrontLeft.attach(5); // Callibrate first ESC
+  escFrontLeft.write(180);
   delay(2000);
-  esc1.write(0);
+  escFrontLeft.write(0);
   delay(2000);
-  esc1.write(90);
+  escFrontLeft.write(90);
   delay(2000);
-  esc2.attach(6); // Callibrate second ESC 
-  esc2.write(180);
+  escFrontRight.attach(6); // Callibrate second ESC 
+  escFrontRight.write(180);
   delay(2000);
-  esc2.write(0);
+  escFrontRight.write(0);
   delay(2000);
-  esc2.write(90);
-  delay(2000);
-
-  esc3.attach(9); // Callibrate third ESC
-  esc3.write(180);
-  delay(2000);
-  esc3.write(0);
-  delay(2000);
-  esc3.write(90);
+  escFrontRight.write(90);
   delay(2000);
 
-  esc4.attach(10); // Calibrate fourth ESC.
-  esc4.write(180);
+  escBackLeft.attach(9); // Callibrate third ESC
+  escBackLeft.write(180);
   delay(2000);
-  esc4.write(0);
+  escBackLeft.write(0);
   delay(2000);
-  esc4.write(90);
+  escBackLeft.write(90);
+  delay(2000);
+
+  escBackRight.attach(10); // Calibrate fourth ESC.
+  escBackRight.write(180);
+  delay(2000);
+  escBackRight.write(0);
+  delay(2000);
+  escBackRight.write(90);
   delay(2000);
 
   pinMode(4,INPUT); // Set up input pins for reciever
@@ -101,8 +109,7 @@ void setup() {
   Serial.begin(9600);
 
   //Initialize PID's here
-  struct PID pitchPID;
-  struct PID rollPID;
+
   //Initialize PID coefficients
   pitchPID.integralCoefficient = 0;
   pitchPID.derivativeCoefficient = 0;
@@ -117,6 +124,7 @@ void setup() {
   rollPID.target = 0;
   rollPID.timeNow = millis();
   rollPID.integralAccumulator = 0;
+
   //initialize mpu6050
   Wire.begin();                                                                                                                                          
   
@@ -141,22 +149,27 @@ void loop() {
   pitch = pitching(recevierReadingChecker(pulseIn(7,HIGH,25000)),throtle);
   yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)),throtle);
   roll = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
-  distance = ultrasonic.Ranging(1);//Reads distance in CM
 
-  esc1.write(90+throtle); //Write Throtle to ESCS.
-  esc2.write(90-throtle);
-  esc3.write(90+throtle);
-  esc4.write(90-throtle);
+  //Get data from sonar and accellerometer
+  distance = ultrasonic.Ranging(1);//Reads distance in CM
+  mpu6050(); //updates accellerometer values
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch);
+  rollAdjustment =calculatePID(rollPID, angle_roll, roll);
+  //Write throttle values
+  escFrontLeft.write(90+(throtle + pitchAdjustment + rollAdjustment)); //+PIDPitch +PIDRoll
+  escFrontRight.write(90-(throtle + pitchAdjustment - rollAdjustment) );
+  escBackLeft.write(90+throtle - pitchAdjustment + rollAdjustment);
+  escBackRight.write(90-throtle - pitchAdjustment - rollAdjustment);
   delay(5);
 
-  Serial.print("ESC1: ");
-  Serial.println(90+throtle);
-  Serial.print("ESC2: ");
-  Serial.println(90-throtle);
-  Serial.print("ESC3: ");
-  Serial.println(90+throtle);
-  Serial.print("ESC4: ");
-  Serial.println(90-throtle);
+  Serial.print("escFrontLeft: ");
+  Serial.println(90+throtle); 
+  Serial.print("escFrontRight: ");
+  Serial.println(90-throtle); //+PIDPitch -PIDRoll
+  Serial.print("escBackLeft: ");
+  Serial.println(90+throtle); //-PIDPitch + PIDRoll
+  Serial.print("escBackRight: ");
+  Serial.println(90-throtle); //-PIDPitch - PIDRoll
 
   
 
@@ -219,13 +232,13 @@ long yawing(long x, long th){  // Get yawing data converted
 //Updates values in PID struct, and returns PID adjustment
 //This could be used for pitch and roll calculations in conjunction
 //with accellerometer readings, and/or height adjustments with sonar readings
-long calculatePID(struct PID data, long currentValue, long currentTarget)
+long calculatePID(struct PID data, float currentValue, long currentTarget)
 {
   data.target = currentTarget;
   unsigned long timeUpdate = millis();
-  data.derivative = (currentValue-data.value)/(timeUpdate - data.timeNow);
-  data.integralAccumulator += (data.target-currentValue) * (timeUpdate - data.timeNow);
-  data.value = currentValue;
+  data.derivative = (long)((currentValue-data.value)/(timeUpdate - data.timeNow));
+  data.integralAccumulator += (long)((data.target-currentValue) * (timeUpdate - data.timeNow));
+  data.value = (long)currentValue;
   data.timeNow = timeUpdate;
   return (data.target - data.value) * data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient;
 }
