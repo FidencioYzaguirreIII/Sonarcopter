@@ -9,9 +9,10 @@
  *      (4)     (3)
  * 
  * Pins in use:
- * ESC Pins: 5, 6, 9, 10
- * RC Pins: 4, 7, 8, 12
- * Sonar Pins: A1, A2
+ * ESC Pins: 5, 6, 9, 10 (1,2,3,4)
+ * RC Pins: 4, 7, 8, 12 (Throttle, Altitude, Elevation, Ruddor)
+ * Sonar Pins: A1, A2 (Trig, Echo)
+ * Gyroscope Pins: A4, A5 (SDA, SCL)
  */
 #include <Wire.h>
 #include <Servo.h>
@@ -24,12 +25,15 @@ Servo escFrontRight;
 Servo escBackLeft;
 Servo escBackRight;
 int val;
+
 //These values are input target values as recieved from the remote controller
 long throtle; // Reciever Stuff
 long pitch;
 long roll;
 long yaw;
-int distance;
+
+int distance; // Sonar
+
 // Movement Stuff
 int moveNumber; //Determines how severly pitching, yawing, or rolling effects quadcopter.
 
@@ -44,6 +48,7 @@ int angle_pitch_buffer, angle_roll_buffer;
 boolean set_gyro_angles;
 float angle_roll_acc, angle_pitch_acc;
 float angle_pitch_output, angle_roll_output;
+
 /*
  * General Structure for PID controller 
  * coefficient terms need to manually tuned to our drone
@@ -86,7 +91,7 @@ void setup() {
   escFrontRight.write(90);
   delay(2000);
 
-  escBackLeft.attach(9); // Callibrate third ESC
+  escBackLeft.attach(10); // Callibrate third ESC
   escBackLeft.write(180);
   delay(2000);
   escBackLeft.write(0);
@@ -94,7 +99,7 @@ void setup() {
   escBackLeft.write(90);
   delay(2000);
 
-  escBackRight.attach(10); // Calibrate fourth ESC.
+  escBackRight.attach(9); // Calibrate fourth ESC.
   escBackRight.write(180);
   delay(2000);
   escBackRight.write(0);
@@ -146,20 +151,22 @@ void setup() {
 void loop() {
   mpu6050();
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
-  pitch = pitching(recevierReadingChecker(pulseIn(7,HIGH,25000)),throtle);
-  yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)),throtle);
+  pitch = angle(recevierReadingChecker(pulseIn(7,HIGH,25000)));
+  yaw = angle(recevierReadingChecker(pulseIn(8,HIGH, 25000)));
   roll = rolling(recevierReadingChecker(pulseIn(12,HIGH, 25000)),throtle);
 
   //Get data from sonar and accellerometer
   distance = ultrasonic.Ranging(1);//Reads distance in CM
+  
   mpu6050(); //updates accellerometer values
   pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch);
-  rollAdjustment =calculatePID(rollPID, angle_roll, roll);
+  rollAdjustment = calculatePID(rollPID, angle_roll, roll);
+  
   //Write throttle values
-  escFrontLeft.write(90+(throtle + pitchAdjustment + rollAdjustment)); //+PIDPitch +PIDRoll
-  escFrontRight.write(90-(throtle + pitchAdjustment - rollAdjustment) );
-  escBackLeft.write(90+throtle - pitchAdjustment + rollAdjustment);
-  escBackRight.write(90-throtle - pitchAdjustment - rollAdjustment);
+  escFrontLeft.write(90 + throtle + pitchAdjustment + rollAdjustment); //+PIDPitch +PIDRoll
+  escFrontRight.write(90 - throtle + pitchAdjustment - rollAdjustment);
+  escBackLeft.write(90 + throtle - pitchAdjustment + rollAdjustment);
+  escBackRight.write(90 - throtle - pitchAdjustment - rollAdjustment);
   delay(5);
 
   Serial.print("escFrontLeft: ");
@@ -188,39 +195,10 @@ long recevierReadingChecker(long x){ // Clips Reviecer input to a certain range.
 }
 
 long escData(long x){ // Get throtle data converted.
-  return ((x-1070)*90/830);
+  return ((x-1070)*80/830);
 }
 
 // The pitching, yawing, and rolling functions still need work.
-
-long pitching(long x, long th){ // Get Pitching Data conveted
-  if (th > 45){
-    if(x > 1485){               // Determine ratio based on throtle.
-      return ((x-1070)*10/830);
-    }
-    else{
-      return -((x-1070)*10/830);
-    }
-  }
-  else {
-    if(x > 45){
-      return -((x-1070)*10/830);
-    }
-    else{
-      return ((x-1070)*10/830);
-    }
-  }
-}
-
-long rolling(long x, long th){ // Get rolling data converted
-    if (th > 45){
-    return ((x-1070)*10/830);
-  }
-  else {
-     return -((x-1070)*10/830);
-  }
-}
-
 long yawing(long x, long th){  // Get yawing data converted
     if (th > 45){
     return ((x-1070)*10/830);
@@ -229,6 +207,59 @@ long yawing(long x, long th){  // Get yawing data converted
      return -((x-1070)*10/830);
   }
 }
+
+// Return values are place holders
+// This function determines the desired angle for either pitching or yawing
+long angle(long x){
+  if ((1470 < x) ||(x <= 1520)){
+    return 0;
+  }
+  else if(x < 1470){
+    if ( (1230 < x) || (x <= 1310)){
+      return -27;
+    }
+    else if (x <= 1230){
+      if( x <= 1150){
+        return -45;
+      }
+      else{
+        return -36;
+      }
+    }
+    else{
+      if (x <= 1310){
+        return -18;
+      }
+      else{
+        return -9;
+      }
+    }
+  }
+  else{
+    if ( (1680 < x) || (x <= 1760)){
+      return 27;
+    }
+    else if (x <= 1680){
+      if(1820 < x){
+        return 45;
+      }
+      else{
+        return 36;
+      }
+    }
+    else{
+      if (x <= 1600){
+        return 9;
+      }
+      else{
+        return 18;
+      }
+    }
+    
+  }
+}
+
+
 //Updates values in PID struct, and returns PID adjustment
 //This could be used for pitch and roll calculations in conjunction
 //with accellerometer readings, and/or height adjustments with sonar readings
