@@ -83,7 +83,8 @@ void setup() {
   delay(2000);
   escFrontLeft.write(90);
   delay(2000);
-  escFrontRight.attach(6); // Callibrate second ESC 
+  
+  escFrontRight.attach(10); // Callibrate second ESC 
   escFrontRight.write(180);
   delay(2000);
   escFrontRight.write(0);
@@ -91,7 +92,7 @@ void setup() {
   escFrontRight.write(90);
   delay(2000);
 
-  escBackLeft.attach(10); // Callibrate third ESC
+  escBackLeft.attach(6); // Callibrate third ESC
   escBackLeft.write(180);
   delay(2000);
   escBackLeft.write(0);
