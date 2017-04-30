@@ -77,37 +77,26 @@ struct PID{
   
 void setup() {
   escFrontLeft.attach(5); // Callibrate first ESC
-  escFrontLeft.write(180);
-  delay(2000);
-  escFrontLeft.write(0);
-  delay(2000);
-  escFrontLeft.write(90);
-  delay(2000);
-  
   escFrontRight.attach(10); // Callibrate second ESC 
-  escFrontRight.write(180);
-  delay(2000);
-  escFrontRight.write(0);
-  delay(2000);
-  escFrontRight.write(90);
-  delay(2000);
-
   escBackLeft.attach(6); // Callibrate third ESC
-  escBackLeft.write(180);
-  delay(2000);
-  escBackLeft.write(0);
-  delay(2000);
-  escBackLeft.write(90);
-  delay(2000);
-
   escBackRight.attach(9); // Calibrate fourth ESC.
+  
+  escFrontLeft.write(180);
+  escFrontRight.write(180);
+  escBackLeft.write(180);
   escBackRight.write(180);
   delay(2000);
+  escFrontLeft.write(0);
+  escFrontRight.write(0);
+  escBackLeft.write(0);
   escBackRight.write(0);
   delay(2000);
+  escFrontLeft.write(90);
+  escFrontRight.write(90);
+  escBackLeft.write(90);
   escBackRight.write(90);
   delay(2000);
-
+  
   pinMode(4,INPUT); // Set up input pins for reciever
   pinMode(7,INPUT);
   pinMode(8,INPUT);
@@ -165,27 +154,45 @@ void loop() {
   
   //Write throttle values
   if (throtle > 30){
-    escFrontLeft.write((int)(90 + throtle + pitchAdjustment + rollAdjustment + yawing)); //+PIDPitch +PIDRoll
-    escFrontRight.write((int) (90 - throtle - pitchAdjustment + rollAdjustment + yawing));
-    escBackLeft.write((int) (90 - throtle + pitchAdjustment - rollAdjustment + yawing));
-    escBackRight.write((int) (90 + throtle - pitchAdjustment - rollAdjustment + yawing));
-    delay(5);
+    escFrontLeft.write((int)(90 + throtle + pitchAdjustment + rollAdjustment + yaw)); //+PIDPitch +PIDRoll
+    escFrontRight.write((int)(90 + throtle + pitchAdjustment - rollAdjustment - yaw));
+    escBackLeft.write((int)(90 + throtle - pitchAdjustment + rollAdjustment - yaw));
+    escBackRight.write((int)(90 + throtle - pitchAdjustment - rollAdjustment + yaw));
+    // Print troubleshooting data.
+    Serial.print("escFrontLeft: ");
+    Serial.println((int) (90 + throtle + pitchAdjustment + rollAdjustment + yaw)); 
+    Serial.print("escFrontRight: ");
+    Serial.println((int) (90 + throtle + pitchAdjustment - rollAdjustment - yaw)); 
+    Serial.print("escBackLeft: ");
+    Serial.println((int) (90 + throtle - pitchAdjustment + rollAdjustment - yaw)); 
+    Serial.print("escBackRight: ");
+    Serial.println((int) (90 + throtle - pitchAdjustment - rollAdjustment + yaw)); 
   }
   else{
-    escFrontLeft.write((int) (90 + throtle)); //+PIDPitch +PIDRoll
-    escFrontRight.write((int) (90 - throtle));
-    escBackLeft.write((int) (90 - throtle));
-    escBackRight.write((int) (90 + throtle));
+    escFrontLeft.write((int)(90 + throtle)); //+PIDPitch +PIDRoll
+    escFrontRight.write((int)(90 - throtle));
+    escBackLeft.write((int)(90 - throtle));
+    escBackRight.write((int)(90 + throtle));
+    // Print troubleshooting data.
+    Serial.print("escFrontLeft: ");
+    Serial.println((int) (90 + throtle)); 
+    Serial.print("escFrontRight: ");
+    Serial.println((int) (90 + throtle)); 
+    Serial.print("escBackLeft: ");
+    Serial.println((int) (90 + throtle)); 
+    Serial.print("escBackRight: ");
+    Serial.println((int) (90 + throtle)); 
   }
 
+  // Print troubleshooting data.
   Serial.print("escFrontLeft: ");
-  Serial.println(90+throtle); 
+  Serial.println((int) (90 + throtle + pitchAdjustment + rollAdjustment + yaw)); 
   Serial.print("escFrontRight: ");
-  Serial.println(90-throtle); //+PIDPitch -PIDRoll
+  Serial.println((int) (90 + throtle + pitchAdjustment - rollAdjustment - yaw)); 
   Serial.print("escBackLeft: ");
-  Serial.println(90+throtle); //-PIDPitch + PIDRoll
+  Serial.println((int) (90 + throtle - pitchAdjustment + rollAdjustment - yaw)); 
   Serial.print("escBackRight: ");
-  Serial.println(90-throtle); //-PIDPitch - PIDRoll
+  Serial.println((int) (90 + throtle - pitchAdjustment - rollAdjustment + yaw)); 
 
   
 
@@ -204,7 +211,7 @@ long recevierReadingChecker(long x){ // Clips Reviecer input to a certain range.
 }
 
 long escData(long x){ // Get throtle data converted.
-  return ((x-1070)*60/830);
+  return ((x-1070)*50/830);
 }
 
 // The pitching, yawing, and rolling functions still need work.
