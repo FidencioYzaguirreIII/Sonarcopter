@@ -142,59 +142,63 @@ void loop() {
   mpu6050();
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
   pitch = angle(recevierReadingChecker(pulseIn(7,HIGH,25000)));
-  yaw = yawing(recevierReadingChecker(pulseIn(8,HIGH, 25000)));
+  yaw = angle(recevierReadingChecker(pulseIn(8,HIGH, 25000)))/9*(-1);
   roll = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)));
 
   //Get data from sonar and accellerometer
   distance = ultrasonic.Ranging(1);//Reads distance in CM
   
   mpu6050(); //updates accellerometer values
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)*5/45;
-  rollAdjustment = calculatePID(rollPID, angle_roll, roll)*5/45;
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)*3/45;
+  rollAdjustment = calculatePID(rollPID, angle_roll, roll)*3/45;
   
   //Write throttle values
-  if (throtle > 30){
-    escFrontLeft.write((int)(90 + throtle + pitchAdjustment + rollAdjustment + yaw)); //+PIDPitch +PIDRoll
-    escFrontRight.write((int)(90 + throtle + pitchAdjustment - rollAdjustment - yaw));
-    escBackLeft.write((int)(90 + throtle - pitchAdjustment + rollAdjustment - yaw));
-    escBackRight.write((int)(90 + throtle - pitchAdjustment - rollAdjustment + yaw));
+  if (throtle > 20){
+    escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
+    escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
+    escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
+    escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
     // Print troubleshooting data.
     Serial.print("escFrontLeft: ");
-    Serial.println((int) (90 + throtle + pitchAdjustment + rollAdjustment + yaw)); 
+    Serial.println(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
     Serial.print("escFrontRight: ");
-    Serial.println((int) (90 + throtle + pitchAdjustment - rollAdjustment - yaw)); 
+    Serial.println(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw))); 
     Serial.print("escBackLeft: ");
-    Serial.println((int) (90 + throtle - pitchAdjustment + rollAdjustment - yaw)); 
+    Serial.println(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
     Serial.print("escBackRight: ");
-    Serial.println((int) (90 + throtle - pitchAdjustment - rollAdjustment + yaw)); 
+    Serial.println(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw))); 
   }
   else{
-    escFrontLeft.write((int)(90 + throtle)); //+PIDPitch +PIDRoll
-    escFrontRight.write((int)(90 - throtle));
-    escBackLeft.write((int)(90 - throtle));
-    escBackRight.write((int)(90 + throtle));
+    escFrontLeft.write((float)(90 + throtle)); //+PIDPitch +PIDRoll
+    escFrontRight.write((float)(90 - throtle));
+    escBackLeft.write((float)(90 - throtle));
+    escBackRight.write((float)(90 + throtle));
     // Print troubleshooting data.
     Serial.print("escFrontLeft: ");
-    Serial.println((int) (90 + throtle)); 
+    Serial.println((float) (90 + throtle)); 
     Serial.print("escFrontRight: ");
-    Serial.println((int) (90 + throtle)); 
+    Serial.println((float) (90 + throtle)); 
     Serial.print("escBackLeft: ");
-    Serial.println((int) (90 + throtle)); 
+    Serial.println((float) (90 + throtle)); 
     Serial.print("escBackRight: ");
-    Serial.println((int) (90 + throtle)); 
+    Serial.println((float) (90 + throtle)); 
   }
 
   // Print troubleshooting data.
-  Serial.print("escFrontLeft: ");
-  Serial.println((int) (90 + throtle + pitchAdjustment + rollAdjustment + yaw)); 
-  Serial.print("escFrontRight: ");
-  Serial.println((int) (90 + throtle + pitchAdjustment - rollAdjustment - yaw)); 
-  Serial.print("escBackLeft: ");
-  Serial.println((int) (90 + throtle - pitchAdjustment + rollAdjustment - yaw)); 
-  Serial.print("escBackRight: ");
-  Serial.println((int) (90 + throtle - pitchAdjustment - rollAdjustment + yaw)); 
-
   
+
+}
+
+float safety(float data){
+  if(data > 130){
+    return 130;
+  }
+  else if(data < 90){
+    return 90;
+  }
+  else{
+    return data;
+  }
 
 }
 
@@ -216,7 +220,7 @@ long escData(long x){ // Get throtle data converted.
 
 // The pitching, yawing, and rolling functions still need work.
 long yawing(long x){  // Get yawing data converted
-    return ((x-1070) * 5 / 830);
+    return ((x-1070) * 3 / 830);
 }
 
 // Return values are place holders
