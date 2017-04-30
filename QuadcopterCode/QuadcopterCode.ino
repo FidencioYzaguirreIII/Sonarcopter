@@ -9,7 +9,7 @@
  *      (4)     (3)
  * 
  * Pins in use:
- * ESC Pins: 5, 6, 9, 10 (1,2,3,4)
+ * ESC Pins: 5, 10, 9, 6 (1,2,3,4)
  * RC Pins: 4, 7, 8, 12 (Throttle, Altitude, Elevation, Ruddor)
  * Sonar Pins: A1, A2 (Trig, Echo)
  * Gyroscope Pins: A4, A5 (SDA, SCL)
@@ -27,10 +27,10 @@ Servo escBackRight;
 int val;
 
 //These values are input target values as recieved from the remote controller
-long throtle; // Reciever Stuff
-long pitch;
-long roll;
-long yaw;
+float throtle; // Reciever Stuff
+float pitch;
+float roll;
+float yaw;
 
 int distance; // Sonar
 
@@ -72,8 +72,8 @@ struct PID{
   struct PID pitchPID;
   struct PID rollPID;
   //Initialize calculated PID's
-  long pitchAdjustment = 0;
-  long rollAdjustment = 0;
+  float pitchAdjustment = 0;
+  float rollAdjustment = 0;
   
 void setup() {
   escFrontLeft.attach(5); // Callibrate first ESC
@@ -95,7 +95,7 @@ void setup() {
   escFrontRight.write(90);
   escBackLeft.write(90);
   escBackRight.write(90);
-  delay(2000);
+  delay(5000);
   
   pinMode(4,INPUT); // Set up input pins for reciever
   pinMode(7,INPUT);
@@ -149,15 +149,16 @@ void loop() {
   distance = ultrasonic.Ranging(1);//Reads distance in CM
   
   mpu6050(); //updates accellerometer values
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)*3/45;
-  rollAdjustment = calculatePID(rollPID, angle_roll, roll)*3/45;
-  
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)*3/90;
+  rollAdjustment = calculatePID(rollPID, angle_roll, roll)*3/90;
+/*  
   //Write throttle values
-  if (throtle > 20){
+  if (throtle > 10){
     escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
     escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
     escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
     escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
+    delay(20);
     // Print troubleshooting data.
     Serial.print("escFrontLeft: ");
     Serial.println(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
@@ -173,6 +174,7 @@ void loop() {
     escFrontRight.write((float)(90 - throtle));
     escBackLeft.write((float)(90 - throtle));
     escBackRight.write((float)(90 + throtle));
+    delay(20);
     // Print troubleshooting data.
     Serial.print("escFrontLeft: ");
     Serial.println((float) (90 + throtle)); 
@@ -183,9 +185,10 @@ void loop() {
     Serial.print("escBackRight: ");
     Serial.println((float) (90 + throtle)); 
   }
-
+*/
   // Print troubleshooting data.
-  
+  Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
+  Serial.print("| Roll: "); Serial.println(angle_roll_output);
 
 }
 
@@ -202,7 +205,7 @@ float safety(float data){
 
 }
 
-long recevierReadingChecker(long x){ // Clips Reviecer input to a certain range.
+float recevierReadingChecker(float x){ // Clips Reviecer input to a certain range.
   if(x < 1070){
     return 1070;
   }
@@ -214,18 +217,14 @@ long recevierReadingChecker(long x){ // Clips Reviecer input to a certain range.
   }
 }
 
-long escData(long x){ // Get throtle data converted.
-  return ((x-1070)*50/830);
+float escData(float x){ // Get throtle data converted.
+  return ((x-1070)*20/830);
 }
 
-// The pitching, yawing, and rolling functions still need work.
-long yawing(long x){  // Get yawing data converted
-    return ((x-1070) * 3 / 830);
-}
 
 // Return values are place holders
 // This function determines the desired angle for either pitching or yawing
-long angle(long x){
+float angle(float x){
   if ((1470 < x) ||(x <= 1520)){
     return 0;
   }
@@ -278,7 +277,7 @@ long angle(long x){
 //Updates values in PID struct, and returns PID adjustment
 //This could be used for pitch and roll calculations in conjunction
 //with accellerometer readings, and/or height adjustments with sonar readings
-long calculatePID(struct PID data, float currentValue, long currentTarget)
+float calculatePID(struct PID data, float currentValue, float currentTarget)
 {
   data.target = currentTarget;
   unsigned long timeUpdate = millis();
@@ -286,7 +285,7 @@ long calculatePID(struct PID data, float currentValue, long currentTarget)
   data.integralAccumulator += (long)((data.target-currentValue) * (timeUpdate - data.timeNow));
   data.value = (long)currentValue;
   data.timeNow = timeUpdate;
-  return (data.target - data.value) * (data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient);
+  return float((data.target - data.value) * (data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient));
 }
 
 void mpu6050(){
@@ -325,8 +324,8 @@ void mpu6050(){
   }
   
   //To dampen the pitch and roll angles a complementary filter is used
-  angle_pitch_output = angle_pitch_output * 0.9 + angle_pitch * 0.1;   
-  angle_roll_output = angle_roll_output * 0.9 + angle_roll * 0.1;      
+  angle_pitch_output = angle_pitch_output * 0.9 + angle_pitch ;   
+  angle_roll_output = angle_roll_output * 0.9 + angle_roll ;      
 }
 
 void read_mpu_6050_data(){                                             //Subroutine for reading the raw gyro and accelerometer data
