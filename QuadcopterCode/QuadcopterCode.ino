@@ -101,7 +101,7 @@ void setup() {
   pinMode(7,INPUT);
   pinMode(8,INPUT);
   pinMode(12,INPUT);
-  Serial.begin(9600);
+  Serial.begin(57600);
 
   //Initialize PID's here
 
@@ -125,67 +125,50 @@ void setup() {
   
   setup_mpu_6050_registers();                                          //Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
 
-  for (int cal_int = 0; cal_int < 2000 ; cal_int ++){                  //Run this code 2000 times
+  for (int cal_int = 0; cal_int < 3000 ; cal_int ++){                  //Run this code 2000 times
     read_mpu_6050_data();                                              //Read the raw acc and gyro data from the MPU-6050
     gyro_x_cal += gyro_x;                                              //Add the gyro x-axis offset to the gyro_x_cal variable
     gyro_y_cal += gyro_y;                                              //Add the gyro y-axis offset to the gyro_y_cal variable
     gyro_z_cal += gyro_z;                                              //Add the gyro z-axis offset to the gyro_z_cal variable
     delay(3);                                                          
   }
-  gyro_x_cal /= 2000;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
-  gyro_y_cal /= 2000;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
-  gyro_z_cal /= 2000;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
+  gyro_x_cal /= 3000;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
+  gyro_y_cal /= 3000;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
+  gyro_z_cal /= 3000;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
   
 }
 
 void loop() {
-  mpu6050();
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
   pitch = angle(recevierReadingChecker(pulseIn(7,HIGH,25000)));
   yaw = angle(recevierReadingChecker(pulseIn(8,HIGH, 25000)))/9*(-1);
   roll = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)));
 
   //Get data from sonar and accellerometer
-  distance = ultrasonic.Ranging(1);//Reads distance in CM
+  //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
   mpu6050(); //updates accellerometer values
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)*3/90;
-  rollAdjustment = calculatePID(rollPID, angle_roll, roll)*3/90;
-/*  
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)/90;
+  rollAdjustment = calculatePID(rollPID, angle_roll, roll)/90;
+  delay(10);
+  
   //Write throttle values
-  if (throtle > 10){
-    escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
-    escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
-    escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
-    escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
-    delay(20);
-    // Print troubleshooting data.
-    Serial.print("escFrontLeft: ");
-    Serial.println(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
-    Serial.print("escFrontRight: ");
-    Serial.println(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw))); 
-    Serial.print("escBackLeft: ");
-    Serial.println(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
-    Serial.print("escBackRight: ");
-    Serial.println(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw))); 
-  }
-  else{
-    escFrontLeft.write((float)(90 + throtle)); //+PIDPitch +PIDRoll
-    escFrontRight.write((float)(90 - throtle));
-    escBackLeft.write((float)(90 - throtle));
-    escBackRight.write((float)(90 + throtle));
-    delay(20);
-    // Print troubleshooting data.
-    Serial.print("escFrontLeft: ");
-    Serial.println((float) (90 + throtle)); 
-    Serial.print("escFrontRight: ");
-    Serial.println((float) (90 + throtle)); 
-    Serial.print("escBackLeft: ");
-    Serial.println((float) (90 + throtle)); 
-    Serial.print("escBackRight: ");
-    Serial.println((float) (90 + throtle)); 
-  }
-*/
+  escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
+  escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
+  escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
+  escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
+  delay(20);
+//  // Print troubleshooting data.
+//  Serial.print("escFrontLeft: ");
+//  Serial.println(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
+//  Serial.print("escFrontRight: ");
+//  Serial.println(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw))); 
+//  Serial.print("escBackLeft: ");
+//  Serial.println(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
+//  Serial.print("escBackRight: ");
+//  Serial.println(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw))); 
+
+
   // Print troubleshooting data.
   Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
   Serial.print("| Roll: "); Serial.println(angle_roll_output);
@@ -288,6 +271,7 @@ float calculatePID(struct PID data, float currentValue, float currentTarget)
   return float((data.target - data.value) * (data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient));
 }
 
+float constant = 0.0016;
 void mpu6050(){
 
   read_mpu_6050_data();                                                //Read the raw acc and gyro data from the MPU-6050
@@ -297,12 +281,11 @@ void mpu6050(){
   gyro_z -= gyro_z_cal;                                                //Subtract the offset calibration value from the raw gyro_z value
   
   //Gyro angle calculations
-  angle_pitch += gyro_x * 0.0000611;                                   
-  angle_roll += gyro_y * 0.0000611;                                    
-  
-  
-  angle_pitch += angle_roll * sin(gyro_z * 0.000001066);               //If the IMU has yawed transfer the roll angle to the pitch angel
-  angle_roll -= angle_pitch * sin(gyro_z * 0.000001066);               //If the IMU has yawed transfer the pitch angle to the roll angel
+  angle_pitch += gyro_x * constant;                                  
+  angle_roll += gyro_y * constant;     
+
+  angle_pitch += angle_roll * sin(gyro_z * constant*(3.14159265358979/180));               //If the IMU has yawed transfer the roll angle to the pitch angel
+  angle_roll -= angle_pitch * sin(gyro_z * constant*(3.14159265358979/180));               //If the IMU has yawed transfer the pitch angle to the roll angel
   
   //Accelerometer angle calculations
   acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));  
@@ -314,18 +297,17 @@ void mpu6050(){
   angle_roll_acc -= 0.0;                                               //Accelerometer calibration value for roll
 
   if(set_gyro_angles){                                                 //If the IMU is already started
-    angle_pitch = angle_pitch * 0.9996 + angle_pitch_acc * 0.0004;     
-    angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;        
+    angle_pitch = angle_pitch * 0.95 + angle_pitch_acc * 0.05;     
+    angle_roll = angle_roll * 0.95 + angle_roll_acc * 0.05;        
   }
   else{                                                                //At first start
     angle_pitch = angle_pitch_acc;                                      
     angle_roll = angle_roll_acc;                                        
     set_gyro_angles = true;                                            
   }
-  
   //To dampen the pitch and roll angles a complementary filter is used
-  angle_pitch_output = angle_pitch_output * 0.9 + angle_pitch ;   
-  angle_roll_output = angle_roll_output * 0.9 + angle_roll ;      
+  angle_pitch_output = angle_pitch_output * 0.8 + angle_pitch * 0.2 ;   
+  angle_roll_output = angle_roll_output * 0.8 + angle_roll * 0.2 ;     
 }
 
 void read_mpu_6050_data(){                                             //Subroutine for reading the raw gyro and accelerometer data
