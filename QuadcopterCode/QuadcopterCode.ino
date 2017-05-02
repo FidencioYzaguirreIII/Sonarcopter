@@ -27,10 +27,10 @@ Servo escBackRight;
 int val;
 
 //These values are input target values as recieved from the remote controller
-float throtle; // Reciever Stuff
+double throtle; // Reciever Stuff
 float pitch;
 float roll;
-float yaw;
+double yaw;
 
 int distance; // Sonar
 
@@ -59,44 +59,23 @@ float angle_pitch_output, angle_roll_output;
 
 struct PID{
   unsigned long timeNow;  //time stored in PID for integral accumulator and derivative calculator;
-  long target;
-  long integralAccumulator;
-  long derivative;
-  long value;
-  long proportionalCoefficient;
-  long integralCoefficient;
-  long derivativeCoefficient;
+  double target;
+  double integralAccumulator;
+  double derivative;
+  double value;
+  double proportionalCoefficient;
+  double integralCoefficient;
+  double derivativeCoefficient;
 };
 
 //PID variables
   struct PID pitchPID;
   struct PID rollPID;
   //Initialize calculated PID's
-  float pitchAdjustment = 0;
-  float rollAdjustment = 0;
+  double pitchAdjustment;
+  double rollAdjustment;
   
 void setup() {
-  escFrontLeft.attach(5); // Callibrate first ESC
-  escFrontRight.attach(10); // Callibrate second ESC 
-  escBackLeft.attach(6); // Callibrate third ESC
-  escBackRight.attach(9); // Calibrate fourth ESC.
-  
-  escFrontLeft.write(180);
-  escFrontRight.write(180);
-  escBackLeft.write(180);
-  escBackRight.write(180);
-  delay(2000);
-  escFrontLeft.write(0);
-  escFrontRight.write(0);
-  escBackLeft.write(0);
-  escBackRight.write(0);
-  delay(2000);
-  escFrontLeft.write(90);
-  escFrontRight.write(90);
-  escBackLeft.write(90);
-  escBackRight.write(90);
-  delay(5000);
-  
   pinMode(4,INPUT); // Set up input pins for reciever
   pinMode(7,INPUT);
   pinMode(8,INPUT);
@@ -107,11 +86,11 @@ void setup() {
 
   //Initialize PID coefficients
   pitchPID.integralCoefficient = 0.00;
-  pitchPID.derivativeCoefficient = 0.2;
-  pitchPID.proportionalCoefficient = 0.1;
+  pitchPID.derivativeCoefficient = 0.1;
+  pitchPID.proportionalCoefficient = 0.2;
   rollPID.integralCoefficient = 0.00;
-  rollPID.derivativeCoefficient = 0.2;
-  rollPID.proportionalCoefficient = 0.1;
+  rollPID.derivativeCoefficient = 0.1;
+  rollPID.proportionalCoefficient = 0.2;
   //Initialize PID other values:
   pitchPID.target = 0; //Need to decide if this value should be transformed into an angle
   pitchPID.timeNow = millis();
@@ -135,9 +114,32 @@ void setup() {
   gyro_x_cal /= 3000;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
   gyro_y_cal /= 3000;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
   gyro_z_cal /= 3000;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
+
+  escFrontLeft.attach(5); // Callibrate first ESC
+  escFrontRight.attach(10); // Callibrate second ESC 
+  escBackLeft.attach(6); // Callibrate third ESC
+  escBackRight.attach(9); // Calibrate fourth ESC.
+  
+  escFrontLeft.write(180);
+  escFrontRight.write(180);
+  escBackLeft.write(180);
+  escBackRight.write(180);
+  delay(2000);
+  escFrontLeft.write(0);
+  escFrontRight.write(0);
+  escBackLeft.write(0);
+  escBackRight.write(0);
+  delay(2000);
+  escFrontLeft.write(90);
+  escFrontRight.write(90);
+  escBackLeft.write(90);
+  escBackRight.write(90);
+  delay(5000);
   
 }
 
+double bias1 = 2.0;
+double bias2 = 2.0;
 void loop() {
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
   pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000)));
@@ -148,38 +150,61 @@ void loop() {
   //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
   mpu6050(); //updates accellerometer valuest
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch);
-  rollAdjustment = calculatePID(rollPID, angle_roll, roll);
+//  angle_pitch_output++;
+//  angle_roll_output = angle_roll_output+4;
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch_output, pitch);
+  rollAdjustment = calculatePID(rollPID, angle_roll_output, roll);
+  Serial.println("Pitch Adjustment: ");
+  Serial.println(pitchAdjustment);
+  Serial.println("Roll Adjustment: ");
+  Serial.println(rollAdjustment);
   delay(10);
-  
+
+//  if(throtle > 2){
+//      bias1 = 0;
+//      bias2 = 0;
+//  }
+//  else{
+//    bias1 = 2;
+//    bias2 = 2;
+//  }
   //Write throttle values
-  if(throtle > 5){ 
-    escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
-    escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
-    escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
-    escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
+  if(throtle > 3){ 
+    escFrontLeft.write(safety((double)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
+    escFrontRight.write(safety((double)(90 + throtle + pitchAdjustment - rollAdjustment - yaw+bias1)));
+    escBackLeft.write(safety((double)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
+    escBackRight.write(safety((double)(90 + throtle - pitchAdjustment - rollAdjustment + yaw+bias2)));
+    Serial.print("escFrontLeft: ");
+    Serial.println(safety((double)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
+    Serial.print("escFrontRight: ");
+    Serial.println(safety((double)(90 + throtle + pitchAdjustment - rollAdjustment - yaw+bias1))); 
+    Serial.print("escBackLeft: ");
+    Serial.println(safety((double)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
+    Serial.print("escBackRight: ");
+    Serial.println(safety((double)(90 + throtle - pitchAdjustment - rollAdjustment + yaw+bias2))); 
   }
   else{
-    escFrontLeft.write(safety((float)(90 + throtle))); //+PIDPitch +PIDRoll
-    escFrontRight.write(safety((float)(90 + throtle)));
-    escBackLeft.write(safety((float)(90 + throtle)));
-    escBackRight.write(safety((float)(90 + throtle)));
+    escFrontLeft.write(safety((double)(90 + throtle))); //+PIDPitch +PIDRoll
+    escFrontRight.write(safety((double)(90 + throtle+bias1)));
+    escBackLeft.write(safety((double)(90 + throtle)));
+    escBackRight.write(safety((double)(90 + throtle+bias2)));
+    Serial.print("escFrontLeft: ");
+    Serial.println(safety((double)(90 + throtle))); 
+    Serial.print("escFrontRight: ");
+    Serial.println(safety((double)(90 + throtle+bias1))); 
+    Serial.print("escBackLeft: ");
+    Serial.println(safety((double)(90 + throtle))); 
+    Serial.print("escBackRight: ");
+    Serial.println(safety((double)(90 + throtle+bias2))); 
   }
     delay(20);
 //  // Print troubleshooting data.
-//  Serial.print("escFrontLeft: ");
-//  Serial.println(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
-//  Serial.print("escFrontRight: ");
-//  Serial.println(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw))); 
-//  Serial.print("escBackLeft: ");
-//  Serial.println(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
-//  Serial.print("escBackRight: ");
-//  Serial.println(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw))); 
+
 
 
 // Print troubleshooting data.
-//  Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
-//  Serial.print("| Roll: "); Serial.println(angle_roll_output);
+  Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
+  Serial.print("| Roll: "); Serial.println(angle_roll_output);
 
 }
 
@@ -268,15 +293,15 @@ float angle(float x){
 //Updates values in PID struct, and returns PID adjustment
 //This could be used for pitch and roll calculations in conjunction
 //with accellerometer readings, and/or height adjustments with sonar readings
-float calculatePID(struct PID data, float currentValue, float currentTarget)
+double calculatePID(struct PID data, float currentValue, float currentTarget)
 {
   data.target = currentTarget;
   unsigned long timeUpdate = millis();
-  data.derivative = (long)((currentValue-data.value)/(timeUpdate - data.timeNow));
-  data.integralAccumulator += (long)((data.target-currentValue) * (timeUpdate - data.timeNow));
-  data.value = (long)currentValue;
+  data.derivative = (double)((currentValue-data.value)/(timeUpdate - data.timeNow));
+  data.integralAccumulator += (double)((data.target-currentValue) * (timeUpdate - data.timeNow));
+  data.value = (double)currentValue;
   data.timeNow = timeUpdate;
-  return float((data.target - data.value) * (data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient));
+  return double((data.target - data.value) * (data.proportionalCoefficient + data.integralAccumulator * data.integralCoefficient + data.derivative * data.derivativeCoefficient));
 }
 
 float constant = 0.0016;
