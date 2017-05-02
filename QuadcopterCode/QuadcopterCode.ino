@@ -106,12 +106,12 @@ void setup() {
   //Initialize PID's here
 
   //Initialize PID coefficients
-  pitchPID.integralCoefficient = 0;
-  pitchPID.derivativeCoefficient = 0;
-  pitchPID.proportionalCoefficient = 0;
-  rollPID.integralCoefficient = 0;
-  rollPID.derivativeCoefficient = 0;
-  rollPID.proportionalCoefficient = 0;
+  pitchPID.integralCoefficient = 0.00;
+  pitchPID.derivativeCoefficient = 0.2;
+  pitchPID.proportionalCoefficient = 0.1;
+  rollPID.integralCoefficient = 0.00;
+  rollPID.derivativeCoefficient = 0.2;
+  rollPID.proportionalCoefficient = 0.1;
   //Initialize PID other values:
   pitchPID.target = 0; //Need to decide if this value should be transformed into an angle
   pitchPID.timeNow = millis();
@@ -140,24 +140,32 @@ void setup() {
 
 void loop() {
   throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000))); // Get information from remote controller
-  pitch = angle(recevierReadingChecker(pulseIn(7,HIGH,25000)));
-  yaw = angle(recevierReadingChecker(pulseIn(8,HIGH, 25000)))/9*(-1);
-  roll = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)));
-
+  pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000)));
+  yaw = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)))/20*(-1);
+  roll = angle(recevierReadingChecker(pulseIn(7,HIGH, 25000)));
+  
   //Get data from sonar and accellerometer
   //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
-  mpu6050(); //updates accellerometer values
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch)/90;
-  rollAdjustment = calculatePID(rollPID, angle_roll, roll)/90;
+  mpu6050(); //updates accellerometer valuest
+  pitchAdjustment = calculatePID(pitchPID, angle_pitch, pitch);
+  rollAdjustment = calculatePID(rollPID, angle_roll, roll);
   delay(10);
   
   //Write throttle values
-  escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
-  escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
-  escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
-  escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
-  delay(20);
+  if(throtle > 5){ 
+    escFrontLeft.write(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
+    escFrontRight.write(safety((float)(90 + throtle + pitchAdjustment - rollAdjustment - yaw)));
+    escBackLeft.write(safety((float)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
+    escBackRight.write(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw)));
+  }
+  else{
+    escFrontLeft.write(safety((float)(90 + throtle))); //+PIDPitch +PIDRoll
+    escFrontRight.write(safety((float)(90 + throtle)));
+    escBackLeft.write(safety((float)(90 + throtle)));
+    escBackRight.write(safety((float)(90 + throtle)));
+  }
+    delay(20);
 //  // Print troubleshooting data.
 //  Serial.print("escFrontLeft: ");
 //  Serial.println(safety((float)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); 
@@ -169,9 +177,9 @@ void loop() {
 //  Serial.println(safety((float)(90 + throtle - pitchAdjustment - rollAdjustment + yaw))); 
 
 
-  // Print troubleshooting data.
-  Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
-  Serial.print("| Roll: "); Serial.println(angle_roll_output);
+// Print troubleshooting data.
+//  Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
+//  Serial.print("| Roll: "); Serial.println(angle_roll_output);
 
 }
 
@@ -213,43 +221,43 @@ float angle(float x){
   }
   else if(x < 1470){
     if ( (1230 < x) || (x <= 1310)){
-      return -27;
+      return 9;
     }
     else if (x <= 1230){
       if( x <= 1150){
-        return -45;
+        return 15;
       }
       else{
-        return -36;
+        return 12;
       }
     }
     else{
       if (x <= 1310){
-        return -18;
+        return 6;
       }
       else{
-        return -9;
+        return 3;
       }
     }
   }
   else{
     if ( (1680 < x) || (x <= 1760)){
-      return 27;
+      return -9;
     }
     else if (x <= 1680){
       if(1820 < x){
-        return 45;
+        return -15;
       }
       else{
-        return 36;
+        return -12;
       }
     }
     else{
       if (x <= 1600){
-        return 9;
+        return -3;
       }
       else{
-        return 18;
+        return -6;
       }
     }
     
