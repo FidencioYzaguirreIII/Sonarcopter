@@ -86,11 +86,11 @@ void setup() {
 
   //Initialize PID coefficients
   pitchPID.integralCoefficient = 0.00;
-  pitchPID.derivativeCoefficient = 0.1;
-  pitchPID.proportionalCoefficient = 0.2;
+  pitchPID.derivativeCoefficient = 0.0;
+  pitchPID.proportionalCoefficient = 1;
   rollPID.integralCoefficient = 0.00;
-  rollPID.derivativeCoefficient = 0.1;
-  rollPID.proportionalCoefficient = 0.2;
+  rollPID.derivativeCoefficient = 0.0;
+  rollPID.proportionalCoefficient = 1;
   //Initialize PID other values:
   pitchPID.target = 0; //Need to decide if this value should be transformed into an angle
   pitchPID.timeNow = millis();
@@ -104,16 +104,16 @@ void setup() {
   
   setup_mpu_6050_registers();                                          //Setup the registers of the MPU-6050 (500dfs / +/-8g) and start the gyro
 
-  for (int cal_int = 0; cal_int < 3000 ; cal_int ++){                  //Run this code 2000 times
+  for (int cal_int = 0; cal_int < 1000 ; cal_int ++){                  //Run this code 2000 times
     read_mpu_6050_data();                                              //Read the raw acc and gyro data from the MPU-6050
     gyro_x_cal += gyro_x;                                              //Add the gyro x-axis offset to the gyro_x_cal variable
     gyro_y_cal += gyro_y;                                              //Add the gyro y-axis offset to the gyro_y_cal variable
     gyro_z_cal += gyro_z;                                              //Add the gyro z-axis offset to the gyro_z_cal variable
     delay(3);                                                          
   }
-  gyro_x_cal /= 3000;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
-  gyro_y_cal /= 3000;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
-  gyro_z_cal /= 3000;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
+  gyro_x_cal /= 1000;                                                  //Divide the gyro_x_cal variable by 2000 to get the avarage offset
+  gyro_y_cal /= 1000;                                                  //Divide the gyro_y_cal variable by 2000 to get the avarage offset
+  gyro_z_cal /= 1000;                                                  //Divide the gyro_z_cal variable by 2000 to get the avarage offset
 
   escFrontLeft.attach(5); // Callibrate first ESC
   escFrontRight.attach(10); // Callibrate second ESC 
@@ -234,7 +234,7 @@ float recevierReadingChecker(float x){ // Clips Reviecer input to a certain rang
 }
 
 float escData(float x){ // Get throtle data converted.
-  return ((x-1070)*20/830);
+  return ((x-1070)*10.0/830.0);
 }
 
 
