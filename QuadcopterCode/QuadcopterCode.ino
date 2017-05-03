@@ -85,12 +85,12 @@ void setup() {
   //Initialize PID's here
 
   //Initialize PID coefficients
-  pitchPID.integralCoefficient = 0.00;
-  pitchPID.derivativeCoefficient = 0.0;
-  pitchPID.proportionalCoefficient = 1;
-  rollPID.integralCoefficient = 0.00;
-  rollPID.derivativeCoefficient = 0.0;
-  rollPID.proportionalCoefficient = 1;
+  pitchPID.integralCoefficient = 0.001;
+  pitchPID.derivativeCoefficient = 0.2;
+  pitchPID.proportionalCoefficient = 0.1;
+  rollPID.integralCoefficient = 0.001;
+  rollPID.derivativeCoefficient = 0.2;
+  rollPID.proportionalCoefficient = 0.1;
   //Initialize PID other values:
   pitchPID.target = 0; //Need to decide if this value should be transformed into an angle
   pitchPID.timeNow = millis();
@@ -150,15 +150,10 @@ void loop() {
   //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
   mpu6050(); //updates accellerometer valuest
-//  angle_pitch_output++;
-//  angle_roll_output = angle_roll_output+4;
-  pitchAdjustment = calculatePID(pitchPID, angle_pitch_output, pitch);
-  rollAdjustment = calculatePID(rollPID, angle_roll_output, roll);
-  Serial.println("Pitch Adjustment: ");
-  Serial.println(pitchAdjustment);
-  Serial.println("Roll Adjustment: ");
-  Serial.println(rollAdjustment);
-  delay(10);
+  if((angle_pitch_output > 35) || (angle_pitch_output < -35) || (angle_roll_output > 35) || (angle_roll_output < -35)){
+    shutdown();
+  }
+  
 
 //  if(throtle > 2){
 //      bias1 = 0;
@@ -169,7 +164,13 @@ void loop() {
 //    bias2 = 2;
 //  }
   //Write throttle values
-  if(throtle > 3){ 
+  if(throtle > 1){ 
+    pitchAdjustment = calculatePID(pitchPID, angle_pitch_output-1.0, pitch);
+    rollAdjustment = calculatePID(rollPID, angle_roll_output+4.0, roll);
+    Serial.println("Pitch Adjustment: ");
+    Serial.println(pitchAdjustment);
+    Serial.println("Roll Adjustment: ");
+    Serial.println(rollAdjustment);
     escFrontLeft.write(safety((double)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
     escFrontRight.write(safety((double)(90 + throtle + pitchAdjustment - rollAdjustment - yaw+bias1)));
     escBackLeft.write(safety((double)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
@@ -197,20 +198,41 @@ void loop() {
     Serial.print("escBackRight: ");
     Serial.println(safety((double)(90 + throtle+bias2))); 
   }
-    delay(20);
-//  // Print troubleshooting data.
-
-
+//  // Print troubleshooting data
 
 // Print troubleshooting data.
-  Serial.print("Pitch: " ); Serial.print(angle_pitch_output);
-  Serial.print("| Roll: "); Serial.println(angle_roll_output);
+  Serial.print("Pitch: " ); Serial.print(angle_pitch_output-1.0);
+  Serial.print("| Roll: "); Serial.println(angle_roll_output+4.0);
 
 }
 
+int adjustC = 1;
+double adjust(double i){
+  if((i  > adjustC) ){
+    return adjustC;
+  }
+  else if(i < (-adjustC)){
+    return (-adjustC);
+  }
+  else{
+    return i;
+  }
+}
+
+void shutdown(){
+  escFrontLeft.write(90);
+  escFrontRight.write(90);
+  escBackLeft.write(90);
+  escBackRight.write(90);
+  int i = 0;
+  while(i == 0){
+    i =0;
+  }
+}
+
 float safety(float data){
-  if(data > 130){
-    return 130;
+  if(data > 105){
+    return 105;
   }
   else if(data < 90){
     return 90;
@@ -339,8 +361,8 @@ void mpu6050(){
     set_gyro_angles = true;                                            
   }
   //To dampen the pitch and roll angles a complementary filter is used
-  angle_pitch_output = angle_pitch_output * 0.8 + angle_pitch * 0.2 ;   
-  angle_roll_output = angle_roll_output * 0.8 + angle_roll * 0.2 ;     
+  angle_pitch_output = (angle_pitch_output * 0.8 + angle_pitch * 0.2);   
+  angle_roll_output = (angle_roll_output * 0.8 + angle_roll * 0.2);     
 }
 
 void read_mpu_6050_data(){                                             //Subroutine for reading the raw gyro and accelerometer data
