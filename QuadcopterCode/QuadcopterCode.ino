@@ -88,10 +88,10 @@ void setup() {
 
   //Initialize PID coefficients
   pitchPID.integralCoefficient = 0;
-  pitchPID.derivativeCoefficient = 0.4;//0.2
+  pitchPID.derivativeCoefficient = 0;//0.2
   pitchPID.proportionalCoefficient = 1;
   rollPID.integralCoefficient = 0;//0.001
-  rollPID.derivativeCoefficient = 0.4;//0.2;
+  rollPID.derivativeCoefficient = 0.2;//0.2;
   rollPID.proportionalCoefficient = 1;
   //Initialize PID other values:
   pitchPID.target = 0; //Need to decide if this value should be transformed into an angle
@@ -146,13 +146,13 @@ double bias1 = 2.0;
 double bias2 = 2.0;
 void loop() {
 
-  pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000)));
-  yaw = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)))/20*(-1);
-  roll = angle(recevierReadingChecker(pulseIn(7,HIGH, 25000)));
-  throtle = escData(recevierReadingChecker(pulseIn(4, HIGH, 25000)));// Get information from remote controller  
+//  pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000)));  UNNCOMMENT
+//  yaw = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)))/20*(-1);
+//  roll = angle(recevierReadingChecker(pulseIn(7,HIGH, 25000)));
+  throtle = escData(recevierReadingChecker((float)pulseIn(4,HIGH,25000)));// Get information from remote controller 
   
-//  Serial.print("throtle: ");
-//  Serial.println(pulseIn(4, HIGH, 25000));
+  Serial.print("throtle: ");
+  Serial.println(throtle);
   //Get data from sonar and accellerometer
   //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
@@ -168,19 +168,21 @@ void loop() {
 //  }
 //  else{
 //    bias1 = 2;
-//    bias2 = 2;
+//    bias2 = 2; 
 //  }
   //Write throttle values
   if(throtle > 1){ 
     //                             (PID     ,accellerometer val,  target val)
-    //pitchAdjustment = calculatePID(pitchPID, angle_pitch_output-1.0, pitch);
+    //pitchAdjustment = calculatePID(pitchPID, angle_pitch_output-1.0, pitch); DON'T USE
     //rollAdjustment = calculatePID(rollPID, angle_roll_output+4.0, roll);
     pitchAdjustment = calculatePID(pitchPID, angle_pitch_output-angle_pitch_output_cal, pitch);
     rollAdjustment = calculatePID(rollPID, angle_roll_output-angle_roll_output_cal, roll);
-    Serial.print("Pitch Adjustment: ");
-    Serial.print(pitchAdjustment);
-    Serial.print("Roll Adjustment: ");
-    Serial.print(rollAdjustment);
+    pitchAdjustment = sqrt(pitchAdjustment);
+    rollAdjustment = sqrt(rollAdjustment);
+//    Serial.print("Pitch Adjustment: ");
+//    Serial.print(pitchAdjustment);
+//    Serial.print("Roll Adjustment: ");
+//    Serial.print(rollAdjustment);
     escFrontLeft.write(safety((double)(90 + throtle + pitchAdjustment + rollAdjustment + yaw))); //+PIDPitch +PIDRoll
     escFrontRight.write(safety((double)(90 + throtle + pitchAdjustment - rollAdjustment - yaw+bias1)));
     escBackLeft.write(safety((double)(90 + throtle - pitchAdjustment + rollAdjustment - yaw)));
@@ -192,13 +194,15 @@ void loop() {
 //    Serial.print("escBackLeft: ");
 //    Serial.print(safety((double)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
 //    Serial.print("escBackRight: ");
-//    Serial.print(safety((double)(90 + throtle - pitchAdjustment - rollAdjustment + yaw+bias2))); 
+//    Serial.print(safety((double)(90 + throtle - pitchAdjustment - rollAdjustment + yaw+bias2)));
+      Serial.println("Time 2: ");
+      Serial.println(millis()); 
   }
   else{
-    Serial.print("Pitch: ");
-    Serial.print(angle_pitch);
-    Serial.print("Roll: ");
-    Serial.print(angle_roll);
+//    Serial.print("Pitch: ");
+//    Serial.print(angle_pitch);
+//    Serial.print("Roll: ");
+//    Serial.print(angle_roll);
     angle_pitch_output_cal = angle_pitch_output;
     angle_roll_output_cal = angle_roll_output;
 //    angle_pitch = 0;       DON-T USE                         
@@ -208,6 +212,7 @@ void loop() {
     escFrontRight.write(safety((double)(90 + throtle+bias1)));
     escBackLeft.write(safety((double)(90 + throtle)));
     escBackRight.write(safety((double)(90 + throtle+bias2)));
+    
 //    Serial.print("escFrontLeft: ");
 //    Serial.print(safety((double)(90 + throtle))); 
 //    Serial.print("escFrontRight: ");
@@ -215,14 +220,16 @@ void loop() {
 //    Serial.print("escBackLeft: ");
 //    Serial.print(safety((double)(90 + throtle))); 
 //    Serial.print("escBackRight: ");
-//    Serial.print(safety((double)(90 + throtle+bias2))); 
+//    Serial.print(safety((double)(90 + throtle+bias2)));
+      Serial.println("Time 1: ");
+      Serial.println(millis());  
   }
 //  // Print troubleshooting data
 
 // Print troubleshooting data.
 //  Serial.print("Pitch: " ); Serial.print(angle_pitch_output-1.0);
 //  Serial.print("| Roll: "); Serial.println(angle_roll_output+4.0);
-  Serial.println();
+//  Serial.println();
 
 }
 
@@ -268,12 +275,10 @@ float recevierReadingChecker(float x){ // Clips Reviecer input to a certain rang
   if(x < 1070){
     return 1070;
   }
-  else if(x > 1900){
+ if(x > 1900){
     return 1900;
   }
-  else{
-    return x;
-  }
+  return x;
 }
 
 float escData(float x){ // Get throtle data converted.
