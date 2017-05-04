@@ -50,6 +50,8 @@ float angle_pitch_output, angle_roll_output;
 float angle_pitch_output_cal, angle_roll_output_cal;
 
 
+char sensorItterator;
+
 /*
  * General Structure for PID controller 
  * coefficient terms need to manually tuned to our drone
@@ -138,24 +140,49 @@ void setup() {
   escBackLeft.write(90);
   escBackRight.write(90);
   delay(5000);
-  
+
+  //initial sensor values.
+  pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000)));
+  yaw = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)))/20*(-1);
+  roll = angle(recevierReadingChecker(pulseIn(7,HIGH, 25000)));
+  throtle = escData(recevierReadingChecker(pulseIn(4,HIGH,25000)));// Get information from remote controller
+  if(throtle>0)
+  {
+      delay(100);
+      throtle = escData(recevierReadingChecker(pulseIn(4,HIGH,25000)));// Get information from remote controller
+  }
+  sensorItterator = 0;
 }
 
 double bias1 = 2.0;
 double bias2 = 2.0;
 void loop() {
 
-//  pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000)));  UNNCOMMENT
-//  yaw = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)))/20*(-1);
-//  roll = angle(recevierReadingChecker(pulseIn(7,HIGH, 25000)));
-  throtle = escData(recevierReadingChecker((float)pulseIn(4,HIGH,25000)));// Get information from remote controller 
-  
+  switch(sensorItterator)
+  {
+    case 0:
+      pitch = angle(recevierReadingChecker(pulseIn(8,HIGH,25000))); 
+      break;
+    case 1:
+      yaw = angle(recevierReadingChecker(pulseIn(12,HIGH, 25000)))/20*(-1);
+      break;
+    case 2:
+      roll = angle(recevierReadingChecker(pulseIn(7,HIGH, 25000)));
+      break;
+    case 3:
+      throtle = escData(recevierReadingChecker(pulseIn(4,HIGH,25000)));// Get information from remote controller
+      break;
+  }
+  sensorItterator++;
+  sensorItterator%=4;
+   
+  mpu6050();//updates accellerometer valuest 
   Serial.print("throtle: ");
   Serial.println(throtle);
   //Get data from sonar and accellerometer
   //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
-  mpu6050(); //updates accellerometer valuest
+   
   if((angle_pitch_output > 35) || (angle_pitch_output < -35) || (angle_roll_output > 35) || (angle_roll_output < -35)){
     shutdown();
   }
@@ -272,10 +299,10 @@ float safety(float data){
 float recevierReadingChecker(float x){ // Clips Reviecer input to a certain range.
 
   if(x < 1070){
-    return 1070;
+    return 1070.0;
   }
  if(x > 1900){
-    return 1900;
+    return 1900.0;
   }
   return x;
 }
