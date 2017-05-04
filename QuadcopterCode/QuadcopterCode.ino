@@ -40,7 +40,6 @@ int moveNumber; //Determines how severly pitching, yawing, or rolling effects qu
 //IMU(accelerometer stuff)
 double gyro_x, gyro_y, gyro_z;
 long acc_x, acc_y, acc_z, acc_total_vector;
-int temperature;
 double gyro_x_cal, gyro_y_cal, gyro_z_cal;
 long loop_timer;
 float angle_pitch, angle_roll;
@@ -426,8 +425,7 @@ void read_mpu_6050_data(){                                             //Subrout
   while(Wire.available() < 14);                                        
   acc_x = Wire.read()<<8|Wire.read();                                  
   acc_y = Wire.read()<<8|Wire.read();                                  
-  acc_z = Wire.read()<<8|Wire.read();                                  
-  temperature = Wire.read()<<8|Wire.read();                            
+  acc_z = Wire.read()<<8|Wire.read();                                                            
   gyro_x = Wire.read()<<8|Wire.read();                                 
   gyro_y = Wire.read()<<8|Wire.read();                                 
   gyro_z = Wire.read()<<8|Wire.read();                                 
