@@ -177,8 +177,8 @@ void loop() {
   sensorItterator%=4;
    
   mpu6050();//updates accellerometer valuest 
-  Serial.print("throtle: ");
-  Serial.println(throtle);
+//  Serial.print("throtle: ");
+//  Serial.println(throtle);
   //Get data from sonar and accellerometer
   //distance = ultrasonic.Ranging(1);//Reads distance in CM
   
@@ -203,8 +203,7 @@ void loop() {
     //rollAdjustment = calculatePID(rollPID, angle_roll_output+4.0, roll);
     pitchAdjustment = calculatePID(pitchPID, angle_pitch_output-angle_pitch_output_cal, pitch);
     rollAdjustment = calculatePID(rollPID, angle_roll_output-angle_roll_output_cal, roll);
-    pitchAdjustment = sqrt(pitchAdjustment);
-    rollAdjustment = sqrt(rollAdjustment);
+
 //    Serial.print("Pitch Adjustment: ");
 //    Serial.print(pitchAdjustment);
 //    Serial.print("Roll Adjustment: ");
@@ -221,8 +220,8 @@ void loop() {
 //    Serial.print(safety((double)(90 + throtle - pitchAdjustment + rollAdjustment - yaw))); 
 //    Serial.print("escBackRight: ");
 //    Serial.print(safety((double)(90 + throtle - pitchAdjustment - rollAdjustment + yaw+bias2)));
-      Serial.println("Time 2: ");
-      Serial.println(millis()); 
+//      Serial.println("Time 2: ");
+//      Serial.println(millis()); 
   }
   else{
 //    Serial.print("Pitch: ");
@@ -247,14 +246,14 @@ void loop() {
 //    Serial.print(safety((double)(90 + throtle))); 
 //    Serial.print("escBackRight: ");
 //    Serial.print(safety((double)(90 + throtle+bias2)));
-      Serial.println("Time 1: ");
-      Serial.println(millis());  
+//      Serial.println("Time 1: ");
+//      Serial.println(millis());  
   }
 //  // Print troubleshooting data
 
 // Print troubleshooting data.
-//  Serial.print("Pitch: " ); Serial.print(angle_pitch_output-1.0);
-//  Serial.print("| Roll: "); Serial.println(angle_roll_output+4.0);
+    Serial.print("Pitch: " ); Serial.print(angle_pitch_output-angle_pitch_output_cal);
+    Serial.print("| Roll: "); Serial.println(angle_roll_output-angle_roll_output_cal);
 //  Serial.println();
 
 }
@@ -413,8 +412,8 @@ void mpu6050(){
     set_gyro_angles = true;                                            
   }
   //To dampen the pitch and roll angles a complementary filter is used
-  angle_pitch_output = (angle_pitch_output * 0.8 + angle_pitch * 0.2);   
-  angle_roll_output = (angle_roll_output * 0.8 + angle_roll * 0.2);     
+  angle_pitch_output = (angle_pitch_output * 0.996 + angle_pitch * 0.004);   
+  angle_roll_output = (angle_roll_output * 0.996 + angle_roll * 0.004);     
 }
 
 void read_mpu_6050_data(){                                             //Subroutine for reading the raw gyro and accelerometer data
